@@ -1,20 +1,31 @@
 import numpy as np
 import sys
+from copy import deepcopy
+
 sys.setrecursionlimit(1500)
 
 n = 0
+m = 0
+colors = []
 def main():
-    global n
+    global n, m
+    global colors
     m, dim = map(int, input().split())
     n = dim
     colors = input().split()
     colors_removed_from_dom = {}
     cards = []
-    for i in range(n):
+    for _ in range(n):
         cards_temp = input().split()
         cards.append(cards_temp)
     cards = np.array(cards)
-    if solve_sudoku(cards, colors):
+
+    for i in range(n):
+        for j in range(n):
+            if cards[i, j][1] != '#':
+                colors_removed_from_dom = remove_color_from_dom(cards, colors_removed_from_dom, i, j, cards[i, j][1])
+    #print(colors_removed_from_dom)
+    if solve_sudoku(cards, colors, colors_removed_from_dom):
         print(cards)
     else:
         print("No solution")
@@ -22,9 +33,15 @@ def main():
 def find_unassigned_block(cards, location):
     for i in range(n):
         for j in range(n):
-            if cards[i, j][0] == '*' or cards[i, j][1] == '#':
+            if cards[i, j][1] == '#':
                 location[0] = i
                 location[1] = j
+                location[3] = False
+                return True
+            elif  cards[i, j][0] == '*':
+                location[0] = i
+                location[1] = j
+                location[3] = True
                 return True
     return False
 
@@ -39,9 +56,7 @@ def used_in_col(cards, col, num):
         if cards[i, col][0] == str(num):
             return True
     return False
-
-def used_color_in_neighbours(cards, row, col, color):
-
+def get_neighbours(row, col):
     # first block is for left neighbour, second is from up, third is for right and last one is for down.
     neighbours = []
     # r == 0
@@ -66,74 +81,156 @@ def used_color_in_neighbours(cards, row, col, color):
         neighbours = [1,1,0,1]
     else:
         neighbours = [1,1,1,1]
+    
+    return neighbours
+
+
+def used_color_in_neighbours(cards, row, col, num, color):
+
+    neighbours = get_neighbours(row, col)
 
     # check neighbours
+    print("************")
+    print("num = {} , color = {}".format(num,color))
+    color_index = colors.index(color)
     mark = False
     for i in range(len(neighbours)):
         if neighbours[i] == 1:
             if i == 0:
-                if cards[row, col-1][1] == color:
-                    mark = True
-                    break
+                print("num1 = {} , color1 = {}".format(cards[row, col-1][0],cards[row, col-1][1]))
+                if cards[row, col-1][1] != '#':
+                    if cards[row, col-1][1] == color or (cards[row, col-1][0] != '*' and int(num) <= int(cards[row, col-1][0]) and color_index < colors.index(cards[row, col-1][1])) or (cards[row, col-1][0] != '*' and int(num) >= int(cards[row, col-1][0]) and color_index > colors.index(cards[row, col-1][1])):                   
+                        mark = True
+                        break
             elif i == 1:
-                if cards[row-1, col][1] == color:
-                    mark = True
-                    break
+                print("num2 = {} , color2 = {}".format(cards[row-1, col][0],cards[row-1, col][1]))
+                if cards[row-1, col][1] != '#':
+                    if cards[row-1, col][1] == color or (cards[row-1, col][0] != '*' and int(num) <= int(cards[row-1, col][0]) and color_index < colors.index(cards[row-1, col][1])) or (cards[row-1, col][0] != '*' and int(num) >= int(cards[row-1, col][0]) and color_index > colors.index(cards[row-1, col][1])):
+                        mark = True
+                        break
             elif i == 2:
-                if cards[row, col+1][1] == color:
-                    mark = True
-                    break
+                print("num3 = {} , color3 = {}".format(cards[row, col+1][0],cards[row, col+1][1]))
+                if cards[row, col+1][1] != '#':
+                    if cards[row, col+1][1] == color or (cards[row, col+1][0] != '*' and int(num) <= int(cards[row, col+1][0]) and color_index < colors.index(cards[row, col+1][1])) or (cards[row, col+1][0] != '*' and int(num) >= int(cards[row, col+1][0]) and color_index > colors.index(cards[row, col+1][1])):
+                        mark = True
+                        break
             elif i == 3:
-                if cards[row+1, col][1] == color:
-                    mark = True
-                    break
+                print("num4 = {} , color4 = {}".format(cards[row+1, col][0],cards[row+1, col][1]))
+                if cards[row+1, col][1] != '#':
+                    if cards[row+1, col][1] == color or (cards[row+1, col][0] != '*' and int(num) <= int(cards[row+1, col][0]) and color_index < colors.index(cards[row+1, col][1])) or (cards[row+1, col][0] != '*' and int(num) >= int(cards[row+1, col][0]) and color_index > colors.index(cards[row+1, col][1])):
+                        mark = True
+                        break
+    # remove color from neighbors dom if the color is valid for curr cell
+    if mark == False:
+        print("yes")
+        print(colors.index('b'))
+        print(colors.index('y'))
     return mark
 
 
 def check_location_is_safe(cards, row, col, num, color):
-    num = not used_in_row(cards, row, num) and not used_in_col(cards, col, num)
-    color = not used_color_in_neighbours(cards, row, col, color)
-    validity = [num, color]
+    number_val = not used_in_row(cards, row, num) and not used_in_col(cards, col, num)
+    color_val = not used_color_in_neighbours(cards, row, col, num, color)
+    validity = [number_val, color_val]
     return validity
 
+def remove_color_from_dom(cards, colors_removed_from_dom, row, col, color):
+    neighbours = get_neighbours(row, col)
+    new_removed = deepcopy(colors_removed_from_dom)
+    row = int(row)
+    col = int(col)
 
-def solve_sudoku(cards, colors):
-    l = [0, 0]
+    for i in range(len(neighbours)):
+        if neighbours[i] == 1:
+            if i == 0:
+                loc = str(row) + str(col-1)
+                if cards[int(row), int(col-1)][1] == '#' :
+                    if loc not in new_removed:
+                        new_removed[loc] = [color]
+                    elif color not in new_removed[loc]:
+                        new_removed[loc].append(color)
+                        if len(new_removed[loc]) == m:
+                            return None
+            elif i == 1:
+                loc = str(row-1) + str(col)
+                if cards[int(row-1), int(col)][1] == '#' :
+                    if loc not in new_removed:
+                        new_removed[loc] = [color]
+                    elif color not in new_removed[loc]:
+                        new_removed[loc].append(color)
+                        if len(new_removed[loc]) == m:
+                            return None
+            elif i == 2:
+                if cards[int(row), int(col+1)][1] == '#' :
+                    loc = str(row) + str(col+1)
+                    if loc not in new_removed:
+                        new_removed[loc] = [color]
+                    elif color not in new_removed[loc]:
+                        new_removed[loc].append(color)
+                        if len(new_removed[loc]) == m:
+                            return None
+            elif i == 3:
+                if cards[int(row+1), int(col)][1] == '#' :
+                    loc = str(row+1) + str(col)
+                    if loc not in new_removed:
+                        new_removed[loc] = [color]
+                    elif color not in new_removed[loc]:
+                        new_removed[loc].append(color)
+                        if len(new_removed[loc]) == m:
+                            return None
+    return new_removed
+
+def solve_sudoku(cards, colors, colors_removed_from_dom):
+    l = [0, 0, False, False]
     if(not find_unassigned_block(cards, l)):
         return True
     row = l[0]
     col = l[1]
-    for num in range(1, n+1):
-        last_num = cards[row, col][0]
-        last_color = cards[row, col][1]
+    has_num = l[2]
+    has_color = l[3]
+
+    last_num = cards[row, col][0]
+    last_color = cards[row, col][1]
+    for num in range(n, 0, -1):
         for color in colors:
-            new_num = None
-            new_color = None
-            validity = check_location_is_safe(cards, row, col, num, color)
-            if validity[0] and cards[row, col][0] == '*':
-                new_num = str(num)
-            if validity[1] and cards[row, col][1] == '#':
-                new_color = color
-            
-            if new_color is None and new_num is None:
-                continue
-            elif new_color is None and new_num is not None:
-                value = str(new_num) + cards[row, col][1]
-                cards[row, col] = value
-                if solve_sudoku(cards, colors):
-                    return True
-            elif new_color is not None and new_num is None:
+            updated_removed_color_dom = deepcopy(colors_removed_from_dom)
+            loc = str(row) + str(col)
+            mark = False
+            if loc in colors_removed_from_dom:
+                if color in colors_removed_from_dom[loc]:
+                    mark = True
+            if mark == False:
+                new_num = None
+                new_color = None
+                validity = check_location_is_safe(cards, row, col, num, color)
+                if validity[0] and cards[row, col][0] == '*':
+                    new_num = str(num)
+                if validity[1] and cards[row, col][1] == '#':
+                    new_color = color
+                    updated_removed_color_dom = remove_color_from_dom(cards, colors_removed_from_dom, row, col, color)
+                    if updated_removed_color_dom is None:
+                        continue
+                
+                #print(updated_removed_color_dom)
+                if new_color is None and new_num is None:
+                    continue
+                elif new_color is None and new_num is not None:
+                    value = str(new_num) + cards[row, col][1]
+                    cards[row, col] = value
+                    if solve_sudoku(cards, colors, updated_removed_color_dom):
+                        return True
+                elif new_color is not None and new_num is None:
                     value = cards[row, col][0] + new_color
                     cards[row, col] = value
-                    if solve_sudoku(cards, colors):
+                    if solve_sudoku(cards, colors, updated_removed_color_dom):
                         return True
-            else:
+                else:
                     value = new_num + new_color
                     cards[row, col] = value
-                    if solve_sudoku(cards, colors):
+                    if solve_sudoku(cards, colors, updated_removed_color_dom):
                         return True
-            cards[row, col] = last_num + '#'
-        cards[row, col] = '*' + last_color
+            cards[row, col] = last_num + last_color
+        cards[row, col] = last_num + last_color
 
     return False
 
