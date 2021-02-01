@@ -30,20 +30,94 @@ def main():
     else:
         print("No solution")
 
-def find_unassigned_block(cards, location):
+def mrv(availabls, colors_removed_from_dom):
+    availables_mrv = {}
+    for cell in availabls:
+        loc = str(cell[0]) + str(cell[1])
+        if loc in colors_removed_from_dom:  
+            availables_mrv[loc] = m - len(colors_removed_from_dom[loc])
+        else:
+            availables_mrv[loc] = m
+    return availables_mrv
+
+def degree(availables, cards):
+    availables_degree = {}
+    for cell in availables:
+        count = 0
+        row = int(cell[0])
+        col = int(cell[1])
+        loc = cell
+        neighbours = get_neighbours(int(cell[0]), int(cell[1]))
+        for i in range(len(neighbours)):
+            if neighbours[i] == 1:
+                if i == 0:
+                    print("num1 = {} , color1 = {}".format(cards[row, col-1][0],cards[row, col-1][1]))
+                    if cards[row, col-1][1] == '#':
+                        count += 1
+                elif i == 1:
+                    print("num2 = {} , color2 = {}".format(cards[row-1, col][0],cards[row-1, col][1]))
+                    if cards[row-1, col][1] == '#':
+                        count += 1
+                elif i == 2:
+                    print("num3 = {} , color3 = {}".format(cards[row, col+1][0],cards[row, col+1][1]))
+                    if cards[row, col+1][1] == '#':
+                        count += 1
+                elif i == 3:
+                    print("num4 = {} , color4 = {}".format(cards[row+1, col][0],cards[row+1, col][1]))
+                    if cards[row+1, col][1] == '#':
+                        count += 1
+        availables_degree[loc] = count
+    return availables_degree
+        
+
+def find_unassigned_block(cards, location, colors_removed_from_dom):
+    availables = []
     for i in range(n):
         for j in range(n):
-            if cards[i, j][1] == '#':
-                location[0] = i
-                location[1] = j
-                location[3] = False
-                return True
-            elif  cards[i, j][0] == '*':
-                location[0] = i
-                location[1] = j
-                location[3] = True
-                return True
-    return False
+            if cards[i, j][1] == '#' or cards[i, j][0] == '*':
+                #return True
+                print(i,j)
+                availables.append([i,j])
+                #return True
+    print(availables)
+    if len(availables) == 0:
+        return False
+    else:
+        availables_mrv = mrv(availables, colors_removed_from_dom)
+        #availables_degree = degree(availables, cards)
+
+        # Add value of the two heuristics
+        #availables_sum = {}
+        #for location in availables:
+        #    loc = str(location[0]) + str(location[1])
+            # in mrv: smaller valid == biggger invalid
+        #    availables_sum[loc] = -(availables_mrv[loc] - m) + availables_degree[loc]
+
+        key_min = min(availables_mrv.keys(), key=(lambda k: availables_mrv[k]))
+        min_mrv = availables_mrv[key_min]
+        #print(availables_sum)
+        min_locs = []
+        for key, value in availables_mrv.items():
+            if value == min_mrv:
+                min_locs.append(key)
+        if len(min_locs) == 1:
+            location[0] = int(key_min[0])
+            location[1] = int(key_min[1])
+            print(location)
+            print("dard {}".format(min_mrv))
+            return True
+        else:
+            cards_degree = deepcopy(cards)
+            availables_degree = degree(min_locs, cards_degree)
+            key_max = min(availables_degree.keys(), key=(lambda k: availables_degree[k]))
+            max_degree = availables_degree[key_max]
+            location[0] = int(key_max[0])
+            location[1] = int(key_max[1])
+            print(location)
+            print("dard {}".format(max_degree))
+            return True
+
+        
 
 def used_in_row(cards, row, num):
     for i in range(n):
@@ -181,13 +255,11 @@ def remove_color_from_dom(cards, colors_removed_from_dom, row, col, color):
     return new_removed
 
 def solve_sudoku(cards, colors, colors_removed_from_dom):
-    l = [0, 0, False, False]
-    if(not find_unassigned_block(cards, l)):
+    l = [0, 0]
+    if(not find_unassigned_block(cards, l, colors_removed_from_dom)):
         return True
     row = l[0]
     col = l[1]
-    has_num = l[2]
-    has_color = l[3]
 
     last_num = cards[row, col][0]
     last_color = cards[row, col][1]
