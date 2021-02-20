@@ -29,7 +29,6 @@ def main():
             if cards[i, j][0] != '*':
                 cards_temp = deepcopy(cards)
                 numbers_removed_from_dom = remove_numbers_from_dom(cards_temp, numbers_removed_from_dom, i, j, cards[i, j][0])
-
     if solve_sudoku(cards, colors, colors_removed_from_dom, numbers_removed_from_dom):
         print(cards)
     else:
@@ -99,6 +98,8 @@ def find_unassigned_block(cards, location, colors_removed_from_dom):
             location[0] = int(key_max[0])
             location[1] = int(key_max[1])
             return True
+
+        
 
 def used_in_row(cards, row, num):
     for i in range(n):
@@ -290,8 +291,6 @@ def solve_sudoku(cards, colors, colors_removed_from_dom, numbers_removed_from_do
         return True
     row = l[0]
     col = l[1]
-    #print(row, col)
-    #print(numbers_removed_from_dom)
     last_num = cards[row, col][0]
     last_color = cards[row, col][1]
     for num in range(n, 0, -1):
@@ -301,7 +300,6 @@ def solve_sudoku(cards, colors, colors_removed_from_dom, numbers_removed_from_do
             if num in numbers_removed_from_dom[loc]:
                 mark = True
         if mark == False:
-            #print(numbers_removed_from_dom)
             updated_removed_number_dom = deepcopy(numbers_removed_from_dom)
             for color in colors:
                 updated_removed_color_dom = deepcopy(colors_removed_from_dom)
@@ -327,7 +325,6 @@ def solve_sudoku(cards, colors, colors_removed_from_dom, numbers_removed_from_do
                         if updated_removed_color_dom is None:
                             continue
                     
-                    #print(updated_removed_color_dom)
                     if new_color is None and new_num is None:
                         continue
                     elif new_color is None and new_num is not None:
